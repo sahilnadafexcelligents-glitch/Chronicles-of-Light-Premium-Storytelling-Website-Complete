@@ -74,6 +74,7 @@ export default function MouseGlow({
         top: 0,
         transform: `translate(-50%, -50%)`,
       }}
+      aria-hidden="true"
     >
       {/* Main glow gradient */}
       <div
@@ -107,39 +108,23 @@ export default function MouseGlow({
 
       {/* Animated rings */}
       <div
-        className="absolute inset-0 rounded-full opacity-10"
+        className="absolute inset-0 rounded-full opacity-10 animate-glow-pulse"
         style={{
           border: `1px solid ${color}20`,
-          animation: 'glow-pulse 3s ease-in-out infinite',
         }}
       />
       <div
-        className="absolute inset-4 rounded-full opacity-15"
+        className="absolute inset-4 rounded-full opacity-15 animate-glow-pulse animation-delay-500"
         style={{
           border: `1px solid ${color}25`,
-          animation: 'glow-pulse 3s ease-in-out infinite 0.5s',
         }}
       />
       <div
-        className="absolute inset-8 rounded-full opacity-10"
+        className="absolute inset-8 rounded-full opacity-10 animate-glow-pulse animation-delay-1000"
         style={{
           border: `1px solid ${color}20`,
-          animation: 'glow-pulse 3s ease-in-out infinite 1s',
         }}
       />
-
-      <style jsx>{`
-        @keyframes glow-pulse {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 0.1;
-          }
-          50% {
-            transform: scale(1.1);
-            opacity: 0.2;
-          }
-        }
-      `}</style>
     </div>
   );
 }

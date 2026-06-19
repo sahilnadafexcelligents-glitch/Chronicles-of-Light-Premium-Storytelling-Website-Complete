@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -17,12 +17,21 @@ const ParticleSystem = dynamic(() => import('@/components/ParticleSystem'), { ss
 const MouseGlow = dynamic(() => import('@/components/MouseGlow'), { ssr: false });
 const VisualElement = dynamic(() => import('@/components/VisualElement'), { ssr: false });
 
+// Generate deterministic particle positions for footer decorations
+const footerParticles = Array.from({ length: 30 }, (_, i) => ({
+  left: `${((i * 37 + 13) % 100)}%`,
+  top: `${((i * 23 + 7) % 100)}%`,
+  delay: `${((i * 0.07) % 2)}s`,
+  duration: `${2 + ((i * 0.3) % 3)}s`,
+}));
+
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentChapter, setCurrentChapter] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
+  const currentChapterRef = useRef(0);
 
   // Handle loading complete
   const handleLoadingComplete = useCallback(() => {
@@ -43,16 +52,17 @@ export default function Home() {
       const handleScroll = () => {
         const scrollTop = window.scrollY;
         const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = (scrollTop / docHeight) * 100;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
         setScrollProgress(progress);
 
-        // Determine current chapter
+        // Determine current chapter using ref to avoid dependency issues
         const chapterHeight = window.innerHeight;
         const newChapter = Math.min(
           Math.floor(scrollTop / chapterHeight),
           chapters.length - 1
         );
-        if (newChapter !== currentChapter) {
+        if (newChapter !== currentChapterRef.current) {
+          currentChapterRef.current = newChapter;
           setCurrentChapter(newChapter);
         }
       };
@@ -65,8 +75,14 @@ export default function Home() {
           trigger: `#chapter-${chapter.id}`,
           start: 'top center',
           end: 'bottom center',
-          onEnter: () => setCurrentChapter(index),
-          onEnterBack: () => setCurrentChapter(index),
+          onEnter: () => {
+            currentChapterRef.current = index;
+            setCurrentChapter(index);
+          },
+          onEnterBack: () => {
+            currentChapterRef.current = index;
+            setCurrentChapter(index);
+          },
         });
       });
 
@@ -76,7 +92,7 @@ export default function Home() {
         ScrollTrigger.getAll().forEach(t => t.kill());
       };
     }
-  }, [isLoading, isReady, currentChapter]);
+  }, [isLoading, isReady]);
 
   // Handle chapter navigation click
   const handleChapterClick = useCallback((index: number) => {
@@ -156,6 +172,7 @@ export default function Home() {
                 viewBox="0 0 80 80"
                 fill="none"
                 className="relative"
+                aria-hidden="true"
               >
                 <circle
                   cx="40"
@@ -225,34 +242,21 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Decorative elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(30)].map((_, i) => (
+        {/* Decorative elements - deterministic positions */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          {footerParticles.map((particle, i) => (
             <div
               key={i}
-              className="absolute w-1 h-1 rounded-full bg-champagne-gold/20"
+              className="absolute w-1 h-1 rounded-full bg-champagne-gold/20 animate-twinkle"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 2}s`,
+                left: particle.left,
+                top: particle.top,
+                animationDuration: particle.duration,
+                animationDelay: particle.delay,
               }}
             />
           ))}
         </div>
-
-        <style jsx>{`
-          @keyframes twinkle {
-            0%, 100% {
-              opacity: 0.2;
-              transform: scale(1);
-            }
-            50% {
-              opacity: 0.6;
-              transform: scale(1.5);
-            }
-          }
-        `}</style>
       </footer>
 
       {/* Noise Overlay */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Chapter as ChapterType } from '@/data/chapters';
@@ -21,6 +21,15 @@ const visualIcons = {
   ethereal: Sparkles,
 };
 
+// Generate deterministic particle positions for ambient particles
+const generateAmbientParticles = (count: number, chapterId: number) =>
+  Array.from({ length: count }, (_, i) => ({
+    left: `${((i * 47 + chapterId * 13) % 100)}%`,
+    top: `${((i * 31 + chapterId * 17) % 100)}%`,
+    delay: `${((i * 0.15) % 3)}s`,
+    duration: `${5 + ((i * 0.7) % 5)}s`,
+  }));
+
 export default function Chapter({ chapter, index, isActive }: ChapterProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -30,6 +39,21 @@ export default function Chapter({ chapter, index, isActive }: ChapterProps) {
   const narrativeRef = useRef<HTMLParagraphElement>(null);
   const visualRef = useRef<HTMLDivElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
+
+  // Deterministic particles based on chapter ID
+  const ambientParticles = useMemo(
+    () => generateAmbientParticles(20, chapter.id),
+    [chapter.id]
+  );
+
+  // Deterministic orbiting particle positions
+  const orbitingParticles = useMemo(
+    () => Array.from({ length: 6 }, (_, i) => ({
+      rotation: i * 60,
+      duration: 10 + i * 2,
+    })),
+    []
+  );
 
   useEffect(() => {
     if (!sectionRef.current || !isActive) return;
@@ -102,6 +126,7 @@ export default function Chapter({ chapter, index, isActive }: ChapterProps) {
         isActive ? 'opacity-100' : 'opacity-30'
       }`}
       data-chapter={index}
+      aria-label={`Chapter ${chapter.number}: ${chapter.title}`}
     >
       {/* Background gradient layer */}
       <div
@@ -159,11 +184,12 @@ export default function Chapter({ chapter, index, isActive }: ChapterProps) {
               {chapter.narrative}
             </p>
 
-            {/* Decorative quote mark */}
+            {/* Decorative quote mark - aria-hidden for decoration */}
             <div className="relative">
               <span
                 className="absolute -left-4 -top-4 font-display text-8xl opacity-10 select-none"
                 style={{ color: chapter.accentColor }}
+                aria-hidden="true"
               >
                 &ldquo;
               </span>
@@ -179,28 +205,31 @@ export default function Chapter({ chapter, index, isActive }: ChapterProps) {
                 style={{
                   background: `radial-gradient(circle, ${chapter.accentColor}40 0%, transparent 70%)`,
                 }}
+                aria-hidden="true"
               />
 
               {/* Visual container */}
               <div
-                className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 flex items-center justify-center transform scale-95"
+                className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 aspect-square flex items-center justify-center transform scale-95"
               >
                 {/* Rotating border */}
                 <div
-                  className="absolute inset-0 rounded-full border-[2px] border-dashed opacity-30 animate-spin-slow"
+                  className="absolute inset-0 rounded-full border-[2px] border-dashed opacity-30 animate-orbit-rotate"
                   style={{
                     borderColor: chapter.accentColor,
                     animationDuration: '30s',
                   }}
+                  aria-hidden="true"
                 />
 
                 {/* Inner rotating ring */}
                 <div
-                  className="absolute inset-4 rounded-full border border-current opacity-20"
+                  className="absolute inset-4 rounded-full border border-current opacity-20 animate-spin-reverse"
                   style={{
                     borderColor: chapter.accentColor,
-                    animation: 'spin 20s linear infinite reverse',
+                    animationDuration: '20s',
                   }}
+                  aria-hidden="true"
                 />
 
                 {/* Center icon container */}
@@ -209,11 +238,12 @@ export default function Chapter({ chapter, index, isActive }: ChapterProps) {
                   <div
                     className="absolute inset-0 blur-xl opacity-40 animate-pulse"
                     style={{ backgroundColor: chapter.accentColor }}
+                    aria-hidden="true"
                   />
 
                   {/* Icon */}
                   <div
-                    className="relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full flex items-center justify-center"
+                    className="relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full flex items-center justify-center will-change-transform"
                     style={{
                       background: `linear-gradient(135deg, ${chapter.accentColor}20 0%, transparent 50%, ${chapter.accentColor}10 100%)`,
                       border: `1px solid ${chapter.accentColor}40`,
@@ -230,17 +260,18 @@ export default function Chapter({ chapter, index, isActive }: ChapterProps) {
                   </div>
                 </div>
 
-                {/* Orbiting particles */}
-                {[...Array(6)].map((_, i) => (
+                {/* Orbiting particles - deterministic */}
+                {orbitingParticles.map((particle, i) => (
                   <div
                     key={i}
-                    className="absolute w-2 h-2 rounded-full"
+                    className="absolute w-2 h-2 rounded-full animate-orbit"
                     style={{
                       backgroundColor: chapter.accentColor,
                       boxShadow: `0 0 10px ${chapter.accentColor}`,
-                      animation: `orbit ${10 + i * 2}s linear infinite`,
-                      transform: `rotate(${i * 60}deg) translateX(140px)`,
+                      animationDuration: `${particle.duration}s`,
+                      transform: `rotate(${particle.rotation}deg) translateX(140px)`,
                     }}
+                    aria-hidden="true"
                   />
                 ))}
               </div>
@@ -255,52 +286,22 @@ export default function Chapter({ chapter, index, isActive }: ChapterProps) {
         </div>
       </div>
 
-      {/* Ambient particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+      {/* Ambient particles - deterministic */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        {ambientParticles.map((particle, i) => (
           <div
             key={i}
-            className="absolute w-1 h-1 rounded-full opacity-30"
+            className="absolute w-1 h-1 rounded-full opacity-30 animate-float"
             style={{
               backgroundColor: chapter.accentColor,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animation: `float ${5 + Math.random() * 5}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 3}s`,
+              left: particle.left,
+              top: particle.top,
+              animationDuration: particle.duration,
+              animationDelay: particle.delay,
             }}
           />
         ))}
       </div>
-
-      {/* CSS for orbiting particles */}
-      <style jsx>{`
-        @keyframes orbit {
-          from {
-            transform: rotate(0deg) translateX(140px) rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg) translateX(140px) rotate(-360deg);
-          }
-        }
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0) translateX(0);
-            opacity: 0.3;
-          }
-          50% {
-            transform: translateY(-30px) translateX(10px);
-            opacity: 0.6;
-          }
-        }
-      `}</style>
     </section>
   );
 }

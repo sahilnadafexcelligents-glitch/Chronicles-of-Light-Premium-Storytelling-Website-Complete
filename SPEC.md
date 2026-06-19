@@ -238,25 +238,35 @@ src/
 ├── lib/
 │   ├── gsap.ts
 │   ├── lenis.ts
-│   └── three-scene.ts
+│   ├── three-scene.ts
+│   └── useReducedMotion.ts
 └── data/
     └── chapters.ts
 ```
 
 ### Performance Optimizations
-- Three.js canvas: Fixed position, GPU-accelerated
-- Images: Next.js Image with blur placeholder
-- Animations: will-change hints, transform-only where possible
-- Lazy load: Below-fold sections
-- Debounce: Mouse events
-- RAF: requestAnimationFrame for particles
+- **Fonts**: Next.js optimized fonts (next/font) with swap display
+- **Three.js canvas**: Fixed position, GPU-accelerated, paused when hidden
+- **Images**: Next.js Image with AVIF/WebP formats, responsive sizes
+- **Animations**: will-change hints, transform-only where possible
+- **Lazy load**: Dynamic imports for client-side only components
+- **Debounce**: Mouse events with passive listeners
+- **RAF**: requestAnimationFrame for particles
+- **Deterministic particles**: No Math.random() in render to prevent hydration issues
+- **CSS optimization**: Critical CSS inlined, experimental optimizeCss enabled
+- **Console removal**: Console statements removed in production builds
 
-### SEO
-- Semantic HTML structure
-- Meta tags for each chapter
-- Open Graph images
-- Accessible: Keyboard navigation, ARIA labels
-- Reduced motion: Respects prefers-reduced-motion
+### SEO & Accessibility
+- Semantic HTML structure with proper heading hierarchy
+- Meta tags including canonical URLs
+- Open Graph images and Twitter Card support
+- Schema.org structured data (JSON-LD)
+- Accessible: Skip-to-content link, ARIA labels, keyboard navigation
+- Focus-visible states for all interactive elements
+- aria-hidden on decorative elements
+- Reduced motion: Respects prefers-reduced-motion via useReducedMotion hook
+- WCAG-compliant color contrast (via CSS variables)
+- Touch support for mobile navigation
 
 ### Responsive Breakpoints
 - Mobile: < 768px (simplified animations, touch scroll)
